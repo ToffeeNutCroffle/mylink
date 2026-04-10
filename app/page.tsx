@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button";
+import { links } from "@/lib/data";
+
 export default function Home() {
   const skills = ["Unity", "C#", "C++"];
 
@@ -52,15 +55,19 @@ export default function Home() {
             </ul>
           </div>
 
-          {/* GitHub 링크 */}
-          <a
-            href="https://github.com/ToffeeNutCroffle"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-bold text-black underline underline-offset-4 hover:opacity-70"
-          >
-            github.com/ToffeeNutCroffle
-          </a>
+          {/* 링크 목록 */}
+          <div className="w-full flex flex-col gap-3">
+            {links.map((link) => (
+              <Button
+                key={link.id}
+                render={<a href={link.url} target="_blank" rel="noopener noreferrer" />}
+                className="w-full h-12 bg-black text-white font-bold text-sm border-[2px] border-black shadow-[4px_4px_0px_#555] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all rounded-[8px]"
+              >
+                <span className="mr-2">{link.icon}</span>
+                {link.title}
+              </Button>
+            ))}
+          </div>
 
         </div>
       </main>

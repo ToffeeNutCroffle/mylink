@@ -7,70 +7,62 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center px-6 font-mono">
-      <main className="w-full max-w-2xl py-16 flex flex-col gap-8">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-16">
+      <main className="w-full md:w-4/5 md:max-w-[480px] lg:w-[400px] mx-auto">
 
-        {/* 터미널 헤더 */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="w-3 h-3 rounded-full bg-red-500" />
-          <span className="w-3 h-3 rounded-full bg-yellow-500" />
-          <span className="w-3 h-3 rounded-full bg-green-500" />
-          <span className="ml-4 text-xs text-zinc-500">~/profile</span>
-        </div>
+        {/* 프로필 카드 - Neobrutalism 스타일 */}
+        <div className="bg-[#FEF08A] rounded-[12px] border-[3px] border-black shadow-[6px_6px_0px_black] p-8 flex flex-col items-center gap-6">
 
-        {/* 이름 */}
-        <section>
-          <p className="text-green-400 text-sm mb-1">$ whoami</p>
-          <h1 className="text-2xl font-bold text-zinc-100">ToffeeNutCroffle</h1>
-          <p className="text-zinc-500 text-sm mt-1"># 토피넛 크로플 · Game Developer</p>
-        </section>
-
-        {/* 기술 스택 */}
-        <section>
-          <p className="text-green-400 text-sm mb-3">$ cat skills.txt</p>
-          <div className="flex gap-2 flex-wrap">
-            {skills.map((skill) => (
-              <span
-                key={skill}
-                className="bg-zinc-800 text-green-300 border border-zinc-700 rounded px-3 py-1 text-sm"
-              >
-                {skill}
-              </span>
-            ))}
+          {/* 프로필 이미지 */}
+          <div className="w-[120px] h-[120px] rounded-full bg-zinc-300 border-[3px] border-black flex items-center justify-center text-3xl font-bold text-zinc-600">
+            T
           </div>
-        </section>
 
-        {/* 프로젝트 */}
-        <section>
-          <p className="text-green-400 text-sm mb-3">$ ls ./projects</p>
-          <ul className="flex flex-col gap-2">
-            {projects.map((project, index) => (
-              <li key={project.name} className="text-sm text-zinc-300">
-                <span className="text-zinc-600 mr-2">{String(index + 1).padStart(2, "0")}.</span>
-                {project.name}
-              </li>
-            ))}
-          </ul>
-        </section>
+          {/* 이름 */}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-black">ToffeeNutCroffle</h1>
+            <p className="text-sm text-zinc-700 mt-1">토피넛 크로플 · Game Developer</p>
+          </div>
 
-        {/* GitHub 링크 */}
-        <section>
-          <p className="text-green-400 text-sm mb-3">$ open links</p>
+          {/* 기술 스택 */}
+          <div className="w-full">
+            <p className="text-sm font-bold text-black mb-2">Skills</p>
+            <div className="flex gap-2 flex-wrap">
+              {skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="bg-white border-[2px] border-black rounded px-3 py-1 text-sm font-bold"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* 프로젝트 */}
+          <div className="w-full">
+            <p className="text-sm font-bold text-black mb-2">Projects</p>
+            <ul className="flex flex-col gap-2">
+              {projects.map((project, index) => (
+                <li key={project.name} className="text-sm text-black">
+                  <span className="text-zinc-500 mr-2">{String(index + 1).padStart(2, "0")}.</span>
+                  {project.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* GitHub 링크 */}
           <a
             href="https://github.com/ToffeeNutCroffle"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-4"
+            className="text-sm font-bold text-black underline underline-offset-4 hover:opacity-70"
           >
             github.com/ToffeeNutCroffle
           </a>
-        </section>
 
-        {/* 커서 */}
-        <p className="text-green-400 text-sm">
-          $ <span className="animate-pulse">▌</span>
-        </p>
-
+        </div>
       </main>
     </div>
   );

@@ -1,23 +1,50 @@
 "use client";
 
-import { useState } from "react";
-import { links as initialLinks } from "@/lib/data";
+import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  serverTimestamp,
+} from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 
 type Link = {
-  id: number;
+  id: string;
   title: string;
   url: string;
   icon: string;
 };
 
+const LINKS_PATH = "users/anonymous/links";
+
 export default function MyPage() {
-  const [links, setLinks] = useState<Link[]>(initialLinks);
+  const [links, setLinks] = useState<Link[]>([]);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  function handleAdd() {
+  useEffect(() => {
+    async function fetchLinks() {
+      try {
+        const snapshot = await getDocs(collection(db, LINKS_PATH));
+        const fetched = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<Link, "id">),
+        }));
+        setLinks(fetched);
+      } catch (e) {
+        console.error("링크 불러오기 실패:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLinks();
+  }, []);
+
+  async function handleAdd() {
     if (!title.trim()) {
       setError("제목을 입력해주세요");
       return;
@@ -34,13 +61,14 @@ export default function MyPage() {
       setError("올바른 주소를 입력해주세요 (http:// 또는 https://로 시작)");
       return;
     }
-    const newLink: Link = {
-      id: Date.now(),
+
+    const docRef = await addDoc(collection(db, LINKS_PATH), {
       title,
       url,
       icon: "🔗",
-    };
-    setLinks([...links, newLink]);
+      createdAt: serverTimestamp(),
+    });
+    setLinks([...links, { id: docRef.id, title, url, icon: "🔗" }]);
     setTitle("");
     setUrl("");
     setError("");
@@ -82,18 +110,24 @@ export default function MyPage() {
         {/* 링크 목록 */}
         <div className="flex flex-col gap-3">
           <p className="text-sm font-bold text-black">링크 목록 ({links.length})</p>
-          {links.map((link) => (
-            <div
-              key={link.id}
-              className="flex items-center gap-3 bg-white border-[2px] border-black rounded-[8px] px-4 py-3 shadow-[3px_3px_0px_black]"
-            >
-              <span>{link.icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-black truncate">{link.title}</p>
-                <p className="text-xs text-zinc-500 truncate">{link.url}</p>
+          {loading ? (
+            <p className="text-sm text-zinc-500">불러오는 중...</p>
+          ) : links.length === 0 ? (
+            <p className="text-sm text-zinc-500">아직 링크가 없어요. 추가해보세요!</p>
+          ) : (
+            links.map((link) => (
+              <div
+                key={link.id}
+                className="flex items-center gap-3 bg-white border-[2px] border-black rounded-[8px] px-4 py-3 shadow-[3px_3px_0px_black]"
+              >
+                <span>{link.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-black truncate">{link.title}</p>
+                  <p className="text-xs text-zinc-500 truncate">{link.url}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </main>
     </div>

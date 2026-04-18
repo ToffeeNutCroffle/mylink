@@ -6,6 +6,9 @@ import {
   collection,
   addDoc,
   getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
   serverTimestamp,
 } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
@@ -25,6 +28,15 @@ export default function MyPage() {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // 수정 관련 상태
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+  const [editError, setEditError] = useState("");
+
+  // 삭제 모달 관련 상태
+  const [deletingLink, setDeletingLink] = useState<Link | null>(null);
 
   useEffect(() => {
     async function fetchLinks() {
@@ -74,6 +86,57 @@ export default function MyPage() {
     setError("");
   }
 
+  function startEdit(link: Link) {
+    setEditingId(link.id);
+    setEditTitle(link.title);
+    setEditUrl(link.url);
+    setEditError("");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditTitle("");
+    setEditUrl("");
+    setEditError("");
+  }
+
+  async function handleUpdate(link: Link) {
+    if (!editTitle.trim()) {
+      setEditError("제목을 입력해주세요");
+      return;
+    }
+    if (!editUrl.trim()) {
+      setEditError("주소를 입력해주세요");
+      return;
+    }
+    if (
+      !editUrl.startsWith("http://") &&
+      !editUrl.startsWith("https://") &&
+      !editUrl.startsWith("mailto:")
+    ) {
+      setEditError("올바른 주소를 입력해주세요 (http:// 또는 https://로 시작)");
+      return;
+    }
+
+    await updateDoc(doc(db, LINKS_PATH, link.id), {
+      title: editTitle,
+      url: editUrl,
+      updatedAt: serverTimestamp(),
+    });
+    setLinks(
+      links.map((l) =>
+        l.id === link.id ? { ...l, title: editTitle, url: editUrl } : l
+      )
+    );
+    cancelEdit();
+  }
+
+  async function handleDelete(link: Link) {
+    await deleteDoc(doc(db, LINKS_PATH, link.id));
+    setLinks(links.filter((l) => l.id !== link.id));
+    setDeletingLink(null);
+  }
+
   return (
     <div className="min-h-screen bg-white px-4 py-16">
       <main className="w-full max-w-[480px] mx-auto flex flex-col gap-8">
@@ -115,21 +178,106 @@ export default function MyPage() {
           ) : links.length === 0 ? (
             <p className="text-sm text-zinc-500">아직 링크가 없어요. 추가해보세요!</p>
           ) : (
-            links.map((link) => (
-              <div
-                key={link.id}
-                className="flex items-center gap-3 bg-white border-[2px] border-black rounded-[8px] px-4 py-3 shadow-[3px_3px_0px_black]"
-              >
-                <span>{link.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-black truncate">{link.title}</p>
-                  <p className="text-xs text-zinc-500 truncate">{link.url}</p>
+            links.map((link) =>
+              editingId === link.id ? (
+                /* 편집 모드 */
+                <div
+                  key={link.id}
+                  className="bg-[#DBEAFE] border-[2px] border-black rounded-[8px] px-4 py-3 shadow-[3px_3px_0px_black] flex flex-col gap-2"
+                >
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full border-[2px] border-black rounded-[6px] px-3 py-1.5 text-sm font-medium bg-white focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={editUrl}
+                    onChange={(e) => setEditUrl(e.target.value)}
+                    className="w-full border-[2px] border-black rounded-[6px] px-3 py-1.5 text-sm font-medium bg-white focus:outline-none"
+                  />
+                  {editError && (
+                    <p className="text-xs font-bold text-red-600">{editError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleUpdate(link)}
+                      className="flex-1 h-9 bg-black text-white font-bold text-xs border-[2px] border-black shadow-[3px_3px_0px_#555] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all rounded-[6px]"
+                    >
+                      저장
+                    </Button>
+                    <Button
+                      onClick={cancelEdit}
+                      className="flex-1 h-9 bg-white text-black font-bold text-xs border-[2px] border-black shadow-[3px_3px_0px_black] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all rounded-[6px]"
+                    >
+                      취소
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))
+              ) : (
+                /* 일반 모드 */
+                <div
+                  key={link.id}
+                  className="flex items-center gap-3 bg-white border-[2px] border-black rounded-[8px] px-4 py-3 shadow-[3px_3px_0px_black]"
+                >
+                  <span>{link.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-black truncate">{link.title}</p>
+                    <p className="text-xs text-zinc-500 truncate">{link.url}</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => startEdit(link)}
+                      className="text-xs font-bold px-2 py-1 border-[2px] border-black rounded-[6px] bg-[#FEF08A] hover:bg-yellow-300 shadow-[2px_2px_0px_black] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => setDeletingLink(link)}
+                      className="text-xs font-bold px-2 py-1 border-[2px] border-black rounded-[6px] bg-[#FCA5A5] hover:bg-red-400 shadow-[2px_2px_0px_black] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              )
+            )
           )}
         </div>
       </main>
+
+      {/* 삭제 확인 모달 */}
+      {deletingLink && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white border-[3px] border-black rounded-[12px] shadow-[8px_8px_0px_black] p-6 w-full max-w-[320px] flex flex-col gap-4">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <span className="text-4xl">🗑️</span>
+              <p className="text-base font-bold text-black">정말 삭제하시겠습니까?</p>
+              <p className="text-sm text-zinc-600">
+                <span className="font-bold">"{deletingLink.title}"</span> 링크가 삭제됩니다
+              </p>
+              <p className="text-xs font-bold text-red-500 bg-red-50 border border-red-200 rounded-[6px] px-3 py-1.5 w-full">
+                ⚠️ 이 작업은 되돌릴 수 없습니다
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeletingLink(null)}
+                className="flex-1 h-10 font-bold text-sm border-[2px] border-black rounded-[8px] bg-white shadow-[3px_3px_0px_black] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => handleDelete(deletingLink)}
+                className="flex-1 h-10 font-bold text-sm border-[2px] border-black rounded-[8px] bg-red-500 text-white shadow-[3px_3px_0px_black] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+              >
+                삭제하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

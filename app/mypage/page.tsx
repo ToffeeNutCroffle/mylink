@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -12,6 +13,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth-context";
 
 type Link = {
   id: string;
@@ -20,9 +22,10 @@ type Link = {
   icon: string;
 };
 
-const LINKS_PATH = "users/anonymous/links";
-
 export default function MyPage() {
+  const { user, loading: authLoading, signOutUser } = useAuth();
+  const router = useRouter();
+
   const [links, setLinks] = useState<Link[]>([]);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
@@ -39,12 +42,22 @@ export default function MyPage() {
   const [deletingLink, setDeletingLink] = useState<Link | null>(null);
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/login");
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+
     async function fetchLinks() {
       try {
-        const snapshot = await getDocs(collection(db, LINKS_PATH));
-        const fetched = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<Link, "id">),
+        const snapshot = await getDocs(
+          collection(db, `users/${user!.uid}/links`)
+        );
+        const fetched = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<Link, "id">),
         }));
         setLinks(fetched);
       } catch (e) {
@@ -54,7 +67,7 @@ export default function MyPage() {
       }
     }
     fetchLinks();
-  }, []);
+  }, [user]);
 
   async function handleAdd() {
     if (!title.trim()) {
@@ -74,7 +87,7 @@ export default function MyPage() {
       return;
     }
 
-    const docRef = await addDoc(collection(db, LINKS_PATH), {
+    const docRef = await addDoc(collection(db, `users/${user!.uid}/links`), {
       title,
       url,
       icon: "🔗",
@@ -118,7 +131,7 @@ export default function MyPage() {
       return;
     }
 
-    await updateDoc(doc(db, LINKS_PATH, link.id), {
+    await updateDoc(doc(db, `users/${user!.uid}/links`, link.id), {
       title: editTitle,
       url: editUrl,
       updatedAt: serverTimestamp(),
@@ -132,15 +145,36 @@ export default function MyPage() {
   }
 
   async function handleDelete(link: Link) {
-    await deleteDoc(doc(db, LINKS_PATH, link.id));
+    await deleteDoc(doc(db, `users/${user!.uid}/links`, link.id));
     setLinks(links.filter((l) => l.id !== link.id));
     setDeletingLink(null);
+  }
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-sm text-zinc-500">로딩 중...</p>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-white px-4 py-16">
       <main className="w-full max-w-[480px] mx-auto flex flex-col gap-8">
-        <h1 className="text-2xl font-bold text-black">내 링크 관리</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-black">내 링크 관리</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500 truncate max-w-[120px]">
+              {user.displayName ?? user.email}
+            </span>
+            <button
+              onClick={signOutUser}
+              className="text-xs font-bold px-3 py-1.5 border-[2px] border-black rounded-[6px] bg-white shadow-[2px_2px_0px_black] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+            >
+              로그아웃
+            </button>
+          </div>
+        </div>
 
         {/* 링크 추가 폼 */}
         <div className="bg-[#FEF08A] rounded-[12px] border-[3px] border-black shadow-[6px_6px_0px_black] p-6 flex flex-col gap-4">

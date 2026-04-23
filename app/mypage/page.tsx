@@ -10,6 +10,10 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
+  setDoc,
+  query,
+  where,
   serverTimestamp,
 } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
@@ -20,6 +24,12 @@ type Link = {
   title: string;
   url: string;
   icon: string;
+};
+
+type Profile = {
+  username: string;
+  displayName: string;
+  bio: string;
 };
 
 export default function MyPage() {
@@ -41,6 +51,15 @@ export default function MyPage() {
   // 삭제 모달 관련 상태
   const [deletingLink, setDeletingLink] = useState<Link | null>(null);
 
+  // 프로필 관련 상태
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editUsername, setEditUsername] = useState("");
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace("/login");
@@ -50,23 +69,29 @@ export default function MyPage() {
   useEffect(() => {
     if (!user) return;
 
-    async function fetchLinks() {
+    async function fetchData() {
       try {
-        const snapshot = await getDocs(
-          collection(db, `users/${user!.uid}/links`)
-        );
-        const fetched = snapshot.docs.map((d) => ({
+        const [linksSnap, profileSnap] = await Promise.all([
+          getDocs(collection(db, `users/${user!.uid}/links`)),
+          getDoc(doc(db, "users", user!.uid)),
+        ]);
+
+        const fetched = linksSnap.docs.map((d) => ({
           id: d.id,
           ...(d.data() as Omit<Link, "id">),
         }));
         setLinks(fetched);
+
+        if (profileSnap.exists()) {
+          setProfile(profileSnap.data() as Profile);
+        }
       } catch (e) {
-        console.error("링크 불러오기 실패:", e);
+        console.error("데이터 불러오기 실패:", e);
       } finally {
         setLoading(false);
       }
     }
-    fetchLinks();
+    fetchData();
   }, [user]);
 
   async function handleAdd() {
@@ -150,6 +175,64 @@ export default function MyPage() {
     setDeletingLink(null);
   }
 
+  function startEditProfile() {
+    if (!profile) return;
+    setEditUsername(profile.username);
+    setEditDisplayName(profile.displayName);
+    setEditBio(profile.bio);
+    setProfileError("");
+    setEditingProfile(true);
+  }
+
+  function cancelEditProfile() {
+    setEditingProfile(false);
+    setProfileError("");
+  }
+
+  async function handleSaveProfile() {
+    if (!editUsername.trim()) {
+      setProfileError("사용자명을 입력해주세요");
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(editUsername)) {
+      setProfileError("사용자명은 영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다");
+      return;
+    }
+    if (!editDisplayName.trim()) {
+      setProfileError("이름을 입력해주세요");
+      return;
+    }
+
+    setProfileSaving(true);
+    try {
+      // username 중복 체크 (본인 제외)
+      const usernameQuery = query(
+        collection(db, "users"),
+        where("username", "==", editUsername)
+      );
+      const usernameSnap = await getDocs(usernameQuery);
+      const isDuplicate = usernameSnap.docs.some((d) => d.id !== user!.uid);
+      if (isDuplicate) {
+        setProfileError("이미 사용 중인 사용자명입니다");
+        setProfileSaving(false);
+        return;
+      }
+
+      await setDoc(doc(db, "users", user!.uid), {
+        username: editUsername,
+        displayName: editDisplayName,
+        bio: editBio,
+      });
+      setProfile({ username: editUsername, displayName: editDisplayName, bio: editBio });
+      setEditingProfile(false);
+    } catch (e) {
+      console.error("프로필 저장 실패:", e);
+      setProfileError("저장 중 오류가 발생했습니다");
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -174,6 +257,97 @@ export default function MyPage() {
               로그아웃
             </button>
           </div>
+        </div>
+
+        {/* 프로필 섹션 */}
+        <div className="bg-[#D1FAE5] rounded-[12px] border-[3px] border-black shadow-[6px_6px_0px_black] p-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-black">내 프로필</p>
+            {!editingProfile && profile && (
+              <button
+                onClick={startEditProfile}
+                className="text-xs font-bold px-2 py-1 border-[2px] border-black rounded-[6px] bg-white shadow-[2px_2px_0px_black] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+              >
+                수정
+              </button>
+            )}
+          </div>
+
+          {editingProfile ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-zinc-600">사용자명 (URL에 사용)</label>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-zinc-500 font-medium">mylink.app/</span>
+                  <input
+                    type="text"
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value.toLowerCase())}
+                    placeholder="username"
+                    className="flex-1 border-[2px] border-black rounded-[8px] px-3 py-2 text-sm font-medium bg-white focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-zinc-600">이름</label>
+                <input
+                  type="text"
+                  value={editDisplayName}
+                  onChange={(e) => setEditDisplayName(e.target.value)}
+                  placeholder="홍길동"
+                  className="w-full border-[2px] border-black rounded-[8px] px-3 py-2 text-sm font-medium bg-white focus:outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-zinc-600">소개글</label>
+                <textarea
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  placeholder="간단한 소개를 입력해주세요"
+                  rows={2}
+                  className="w-full border-[2px] border-black rounded-[8px] px-3 py-2 text-sm font-medium bg-white focus:outline-none resize-none"
+                />
+              </div>
+              {profileError && (
+                <p className="text-xs font-bold text-red-600">{profileError}</p>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={profileSaving}
+                  className="flex-1 h-9 bg-black text-white font-bold text-xs border-[2px] border-black shadow-[3px_3px_0px_#555] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all rounded-[6px] disabled:opacity-50"
+                >
+                  {profileSaving ? "저장 중..." : "저장"}
+                </Button>
+                <Button
+                  onClick={cancelEditProfile}
+                  className="flex-1 h-9 bg-white text-black font-bold text-xs border-[2px] border-black shadow-[3px_3px_0px_black] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all rounded-[6px]"
+                >
+                  취소
+                </Button>
+              </div>
+            </div>
+          ) : profile ? (
+            <div className="flex flex-col gap-2">
+              <div>
+                <p className="text-lg font-bold text-black">{profile.displayName}</p>
+                <p className="text-xs text-zinc-500">@{profile.username}</p>
+              </div>
+              {profile.bio && (
+                <p className="text-sm text-zinc-600">{profile.bio}</p>
+              )}
+              <a
+                href={`/${profile.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-blue-600 underline"
+              >
+                내 공개 페이지 보기 →
+              </a>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">프로필을 불러오는 중...</p>
+          )}
         </div>
 
         {/* 링크 추가 폼 */}

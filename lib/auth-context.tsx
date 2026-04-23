@@ -7,7 +7,8 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { auth, googleProvider } from "./firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, googleProvider, db } from "./firebase";
 
 type AuthContextType = {
   user: User | null;
@@ -17,6 +18,19 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+async function initProfile(user: User) {
+  const userRef = doc(db, "users", user.uid);
+  const snapshot = await getDoc(userRef);
+  if (!snapshot.exists()) {
+    const emailPrefix = user.email?.split("@")[0] ?? user.uid.slice(0, 8);
+    await setDoc(userRef, {
+      username: emailPrefix,
+      displayName: user.displayName ?? emailPrefix,
+      bio: "",
+    });
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -31,7 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function signInWithGoogle() {
-    await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
+    await initProfile(result.user);
   }
 
   async function signOutUser() {

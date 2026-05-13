@@ -8,7 +8,9 @@ import {
   query,
   where,
   doc,
-  getDoc,
+  updateDoc,
+  increment,
+  setDoc,
 } from "firebase/firestore";
 
 type Link = {
@@ -33,13 +35,13 @@ export default function UserPage({
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [links, setLinks] = useState<Link[]>([]);
+  const [uid, setUid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     async function fetchUserData() {
       try {
-        // username으로 users 컬렉션에서 uid 검색
         const usersQuery = query(
           collection(db, "users"),
           where("username", "==", username)
@@ -52,16 +54,23 @@ export default function UserPage({
         }
 
         const userDoc = usersSnap.docs[0];
-        const uid = userDoc.id;
+        const fetchedUid = userDoc.id;
+        setUid(fetchedUid);
         setProfile(userDoc.data() as Profile);
 
-        // 해당 uid의 링크 불러오기
-        const linksSnap = await getDocs(collection(db, `users/${uid}/links`));
+        const linksSnap = await getDocs(collection(db, `users/${fetchedUid}/links`));
         const fetched = linksSnap.docs.map((d) => ({
           id: d.id,
           ...(d.data() as Omit<Link, "id">),
         }));
         setLinks(fetched);
+
+        // 페이지뷰 카운트 증가
+        setDoc(
+          doc(db, "users", fetchedUid),
+          { pageViews: increment(1) },
+          { merge: true }
+        ).catch(console.error);
       } catch (e) {
         console.error("데이터 불러오기 실패:", e);
         setNotFound(true);
@@ -71,6 +80,16 @@ export default function UserPage({
     }
     fetchUserData();
   }, [username]);
+
+  function handleLinkClick(e: React.MouseEvent, link: Link) {
+    e.preventDefault();
+    if (uid) {
+      updateDoc(doc(db, `users/${uid}/links`, link.id), {
+        clickCount: increment(1),
+      }).catch(console.error);
+    }
+    window.open(link.url, "_blank", "noopener,noreferrer");
+  }
 
   if (loading) {
     return (
@@ -118,9 +137,9 @@ export default function UserPage({
               <a
                 key={link.id}
                 href={link.url}
-                target="_blank"
+                onClick={(e) => handleLinkClick(e, link)}
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-white border-[2px] border-black rounded-[12px] px-5 py-4 shadow-[4px_4px_0px_black] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
+                className="flex items-center gap-3 bg-white border-[2px] border-black rounded-[12px] px-5 py-4 shadow-[4px_4px_0px_black] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all cursor-pointer"
               >
                 <span className="text-xl">{link.icon}</span>
                 <span className="text-sm font-bold text-black">{link.title}</span>

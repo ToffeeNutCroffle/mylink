@@ -24,12 +24,14 @@ type Link = {
   title: string;
   url: string;
   icon: string;
+  clickCount?: number;
 };
 
 type Profile = {
   username: string;
   displayName: string;
   bio: string;
+  pageViews?: number;
 };
 
 export default function MyPage() {
@@ -79,6 +81,7 @@ export default function MyPage() {
         const fetched = linksSnap.docs.map((d) => ({
           id: d.id,
           ...(d.data() as Omit<Link, "id">),
+          clickCount: (d.data().clickCount as number | undefined) ?? 0,
         }));
         setLinks(fetched);
 
@@ -349,6 +352,38 @@ export default function MyPage() {
             <p className="text-sm text-zinc-500">프로필을 불러오는 중...</p>
           )}
         </div>
+
+        {/* 통계 섹션 */}
+        {profile && (
+          <div className="bg-[#E0E7FF] rounded-[12px] border-[3px] border-black shadow-[6px_6px_0px_black] p-6 flex flex-col gap-3">
+            <p className="text-sm font-bold text-black">방문 통계</p>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">👁</span>
+              <p className="text-sm text-zinc-700">
+                총 방문자{" "}
+                <span className="font-bold text-black text-base">
+                  {(profile.pageViews ?? 0).toLocaleString()}
+                </span>
+                명
+              </p>
+            </div>
+            {links.length > 0 && (
+              <div className="flex flex-col gap-2 mt-1">
+                <p className="text-xs font-bold text-zinc-500">링크별 클릭 수</p>
+                {links.map((link) => (
+                  <div key={link.id} className="flex items-center justify-between">
+                    <p className="text-xs text-zinc-700 truncate max-w-[280px]">
+                      {link.icon} {link.title}
+                    </p>
+                    <span className="text-xs font-bold text-black shrink-0 ml-2">
+                      {(link.clickCount ?? 0).toLocaleString()}회
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 링크 추가 폼 */}
         <div className="bg-[#FEF08A] rounded-[12px] border-[3px] border-black shadow-[6px_6px_0px_black] p-6 flex flex-col gap-4">

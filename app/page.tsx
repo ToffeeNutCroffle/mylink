@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "마이링크 - 나만의 링크 페이지",
     description: "모든 링크를 한 곳에 모아 공유하세요",
-    url: "https://mylink.vercel.app",
-    images: [{ url: "https://mylink.vercel.app/opengraph-image", width: 1200, height: 630 }],
+    url: "https://mylink-ten-tau.vercel.app",
+    images: [{ url: "https://mylink-ten-tau.vercel.app/opengraph-image", width: 1200, height: 630 }],
   },
 };
 

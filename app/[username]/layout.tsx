@@ -26,9 +26,9 @@ export async function generateMetadata({
     openGraph: {
       title: `${displayName} (@${username})`,
       description: bio,
-      url: `https://mylink.vercel.app/${username}`,
+      url: `https://mylink-ten-tau.vercel.app/${username}`,
       type: "profile",
-      images: [{ url: `https://mylink.vercel.app/${username}/opengraph-image`, width: 1200, height: 630 }],
+      images: [{ url: `https://mylink-ten-tau.vercel.app/${username}/opengraph-image`, width: 1200, height: 630 }],
     },
   };
 }

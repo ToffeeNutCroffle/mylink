@@ -3,7 +3,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const BASE_URL = "https://mylink.vercel.app";
+  const BASE_URL = "https://mylink-ten-tau.vercel.app";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date() },

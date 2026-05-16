@@ -11,13 +11,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function Image() {
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
-
-  const fontData = await fetch(`${baseUrl}/fonts/NotoSansKR.ttf`).then((r) =>
-    r.arrayBuffer()
-  );
+  const fontData = await fetch(
+    "https://fonts.gstatic.com/s/notosanskr/v36/PbykFmXiEBPT4ITbgNA5Cgm20xz64px_1hVWr0wuPNGmlQNMEfD4.woff2"
+  ).then((r) => r.arrayBuffer()).catch(() => null);
 
   return new ImageResponse(
     (
@@ -38,34 +34,19 @@ export default async function Image() {
             background: "#FEF08A",
             border: "4px solid black",
             borderRadius: "20px",
-            padding: "16px 40px",
+            padding: "16px 48px",
+            display: "flex",
           }}
         >
-          <span
-            style={{
-              fontSize: "80px",
-              fontWeight: "bold",
-              color: "black",
-              fontFamily: "Noto Sans KR",
-            }}
-          >
-            마이링크
+          <span style={{ fontSize: "80px", fontWeight: "bold", color: "black" }}>
+            mylink
           </span>
         </div>
-        <span
-          style={{
-            fontSize: "36px",
-            color: "rgba(255,255,255,0.85)",
-            fontFamily: "Noto Sans KR",
-          }}
-        >
-          모든 링크를 한 곳에 모아 공유하세요
+        <span style={{ fontSize: "36px", color: "rgba(255,255,255,0.85)" }}>
+          Share all your links in one place
         </span>
       </div>
     ),
-    {
-      ...size,
-      fonts: [{ name: "Noto Sans KR", data: fontData, weight: 700, style: "normal" }],
-    }
+    { ...size }
   );
 }

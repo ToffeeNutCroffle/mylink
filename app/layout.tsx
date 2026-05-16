@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://mylink.vercel.app"),
+  metadataBase: new URL("https://mylink-ten-tau.vercel.app"),
   title: "마이링크 - 나만의 링크 페이지",
   description: "모든 링크를 한 곳에 모아 공유하세요",
   openGraph: {
     title: "마이링크 - 나만의 링크 페이지",
     description: "모든 링크를 한 곳에 모아 공유하세요",
-    url: "https://mylink.vercel.app",
+    url: "https://mylink-ten-tau.vercel.app",
     siteName: "마이링크",
     type: "website",
   },

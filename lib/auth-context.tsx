@@ -4,8 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   User,
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
@@ -49,13 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    getRedirectResult(auth).catch(() => {});
-
     return unsubscribe;
   }, []);
 
   async function signInWithGoogle() {
-    await signInWithRedirect(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
+    await initProfile(result.user);
   }
 
   async function signOutUser() {

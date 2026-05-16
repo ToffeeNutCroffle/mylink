@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 export const size = {
   width: 1200,
@@ -10,22 +12,6 @@ export const size = {
 export const contentType = "image/png";
 
 export const runtime = "nodejs";
-
-async function loadNotoSansKR(): Promise<ArrayBuffer | null> {
-  try {
-    const css = await fetch(
-      "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700",
-      { headers: { "User-Agent": "Mozilla/4.0" } }
-    ).then((r) => r.text());
-
-    const urlMatch = css.match(/src: url\((.+?)\) format\('truetype'\)/);
-    if (!urlMatch) return null;
-
-    return fetch(urlMatch[1]).then((r) => r.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
 
 export default async function Image({
   params,
@@ -38,7 +24,7 @@ export default async function Image({
   let bio = "";
 
   const [fontData] = await Promise.all([
-    loadNotoSansKR(),
+    readFile(join(process.cwd(), "public/fonts/NotoSansKR.ttf")),
     (async () => {
       try {
         const q = query(collection(db, "users"), where("username", "==", username));
@@ -54,9 +40,7 @@ export default async function Image({
     })(),
   ]);
 
-  const fonts = fontData
-    ? [{ name: "Noto Sans KR", data: fontData, weight: 700 as const, style: "normal" as const }]
-    : [];
+  const fonts = [{ name: "Noto Sans KR", data: fontData, weight: 700 as const, style: "normal" as const }];
 
   return new ImageResponse(
     (

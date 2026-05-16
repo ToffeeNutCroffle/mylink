@@ -1,6 +1,4 @@
 import { ImageResponse } from "next/og";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export const size = {
   width: 1200,
@@ -12,6 +10,42 @@ export const contentType = "image/png";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+async function fetchProfile(username: string) {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+  const res = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "users" }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: "username" },
+              op: "EQUAL",
+              value: { stringValue: username },
+            },
+          },
+          limit: 1,
+        },
+      }),
+    }
+  );
+
+  const data = await res.json();
+  const doc = data[0]?.document;
+  if (!doc) return null;
+
+  return {
+    displayName: doc.fields?.displayName?.stringValue || username,
+    bio: doc.fields?.bio?.stringValue || "",
+    photoURL: doc.fields?.photoURL?.stringValue || "",
+  };
+}
+
 export default async function Image({
   params,
 }: {
@@ -19,23 +53,16 @@ export default async function Image({
 }) {
   const { username } = await params;
 
-  const q = query(collection(db, "users"), where("username", "==", username));
-  const snap = await getDocs(q);
+  const profile = await fetchProfile(username).catch(() => null);
 
-  let displayName = username;
-  let bio = "";
+  const displayName = profile?.displayName || username;
+  const bio = profile?.bio || "";
   let photoSrc = "";
 
-  if (!snap.empty) {
-    const profile = snap.docs[0].data();
-    displayName = (profile.displayName as string) || username;
-    bio = (profile.bio as string) || "";
-    const photoURL = (profile.photoURL as string) || "";
-    if (photoURL) {
-      const buffer = await fetch(photoURL).then((r) => r.arrayBuffer()).catch(() => null);
-      if (buffer) {
-        photoSrc = `data:image/jpeg;base64,${Buffer.from(buffer).toString("base64")}`;
-      }
+  if (profile?.photoURL) {
+    const buffer = await fetch(profile.photoURL).then((r) => r.arrayBuffer()).catch(() => null);
+    if (buffer) {
+      photoSrc = `data:image/jpeg;base64,${Buffer.from(buffer).toString("base64")}`;
     }
   }
 

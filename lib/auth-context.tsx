@@ -8,7 +8,7 @@ import {
   getRedirectResult,
   signOut,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase";
 
 type AuthContextType = {
@@ -31,6 +31,8 @@ async function initProfile(user: User) {
       bio: "",
       photoURL: user.photoURL ?? "",
     });
+  } else if (!snapshot.data().photoURL && user.photoURL) {
+    await updateDoc(userRef, { photoURL: user.photoURL });
   }
 }
 

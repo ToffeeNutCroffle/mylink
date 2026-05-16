@@ -28,6 +28,7 @@ export async function generateMetadata({
       description: bio,
       url: `https://mylink.vercel.app/${username}`,
       type: "profile",
+      images: [{ url: `https://mylink.vercel.app/${username}/opengraph-image`, width: 1200, height: 630 }],
     },
   };
 }

@@ -24,13 +24,19 @@ export default async function Image({
 
   let displayName = username;
   let bio = "";
-  let photoURL = "";
+  let photoSrc = "";
 
   if (!snap.empty) {
     const profile = snap.docs[0].data();
     displayName = (profile.displayName as string) || username;
     bio = (profile.bio as string) || "";
-    photoURL = (profile.photoURL as string) || "";
+    const photoURL = (profile.photoURL as string) || "";
+    if (photoURL) {
+      const buffer = await fetch(photoURL).then((r) => r.arrayBuffer()).catch(() => null);
+      if (buffer) {
+        photoSrc = `data:image/jpeg;base64,${Buffer.from(buffer).toString("base64")}`;
+      }
+    }
   }
 
   return new ImageResponse(
@@ -48,10 +54,10 @@ export default async function Image({
           padding: "64px",
         }}
       >
-        {photoURL ? (
+        {photoSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={photoURL}
+            src={photoSrc}
             width={120}
             height={120}
             style={{ borderRadius: "60px", objectFit: "cover" }}

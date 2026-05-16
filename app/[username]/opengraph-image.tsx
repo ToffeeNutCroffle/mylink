@@ -11,6 +11,22 @@ export const contentType = "image/png";
 
 export const runtime = "nodejs";
 
+async function loadNotoSansKR(): Promise<ArrayBuffer | null> {
+  try {
+    const css = await fetch(
+      "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700",
+      { headers: { "User-Agent": "Mozilla/4.0" } }
+    ).then((r) => r.text());
+
+    const urlMatch = css.match(/src: url\((.+?)\) format\('truetype'\)/);
+    if (!urlMatch) return null;
+
+    return fetch(urlMatch[1]).then((r) => r.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
 export default async function Image({
   params,
 }: {
@@ -21,17 +37,26 @@ export default async function Image({
   let displayName = username;
   let bio = "";
 
-  try {
-    const q = query(collection(db, "users"), where("username", "==", username));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const profile = snap.docs[0].data();
-      displayName = (profile.displayName as string) || username;
-      bio = (profile.bio as string) || "";
-    }
-  } catch {
-    // DB 조회 실패 시 username으로 폴백
-  }
+  const [fontData] = await Promise.all([
+    loadNotoSansKR(),
+    (async () => {
+      try {
+        const q = query(collection(db, "users"), where("username", "==", username));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const profile = snap.docs[0].data();
+          displayName = (profile.displayName as string) || username;
+          bio = (profile.bio as string) || "";
+        }
+      } catch {
+        // DB 조회 실패 시 username으로 폴백
+      }
+    })(),
+  ]);
+
+  const fonts = fontData
+    ? [{ name: "Noto Sans KR", data: fontData, weight: 700 as const, style: "normal" as const }]
+    : [];
 
   return new ImageResponse(
     (
@@ -116,6 +141,6 @@ export default async function Image({
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, fonts }
   );
 }

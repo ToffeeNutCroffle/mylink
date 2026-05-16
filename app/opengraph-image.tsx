@@ -1,6 +1,4 @@
 import { ImageResponse } from "next/og";
-import { readFile } from "fs/promises";
-import { join } from "path";
 
 export const size = {
   width: 1200,
@@ -12,7 +10,13 @@ export const contentType = "image/png";
 export const runtime = "nodejs";
 
 export default async function Image() {
-  const fontData = await readFile(join(process.cwd(), "public/fonts/NotoSansKR.ttf"));
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+
+  const fontData = await fetch(`${baseUrl}/fonts/NotoSansKR.ttf`).then((r) =>
+    r.arrayBuffer()
+  );
 
   return new ImageResponse(
     (

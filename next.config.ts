@@ -1,11 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  experimental: {
-    outputFileTracingIncludes: {
-      "/**": ["./public/fonts/**"],
-    },
-  },
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

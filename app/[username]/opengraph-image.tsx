@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { readFile } from "fs/promises";
-import { join } from "path";
 
 export const size = {
   width: 1200,
@@ -23,8 +21,12 @@ export default async function Image({
   let displayName = username;
   let bio = "";
 
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+
   const [fontData] = await Promise.all([
-    readFile(join(process.cwd(), "public/fonts/NotoSansKR.ttf")),
+    fetch(`${baseUrl}/fonts/NotoSansKR.ttf`).then((r) => r.arrayBuffer()),
     (async () => {
       try {
         const q = query(collection(db, "users"), where("username", "==", username));

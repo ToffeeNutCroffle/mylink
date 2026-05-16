@@ -29,6 +29,7 @@ async function initProfile(user: User) {
       username: emailPrefix,
       displayName: user.displayName ?? emailPrefix,
       bio: "",
+      photoURL: user.photoURL ?? "",
     });
   }
 }

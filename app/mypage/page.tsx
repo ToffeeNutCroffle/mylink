@@ -31,6 +31,7 @@ type Profile = {
   username: string;
   displayName: string;
   bio: string;
+  photoURL?: string;
   pageViews?: number;
 };
 
@@ -225,8 +226,9 @@ export default function MyPage() {
         username: editUsername,
         displayName: editDisplayName,
         bio: editBio,
+        photoURL: profile!.photoURL ?? "",
       });
-      setProfile({ username: editUsername, displayName: editDisplayName, bio: editBio });
+      setProfile({ username: editUsername, displayName: editDisplayName, bio: editBio, photoURL: profile!.photoURL ?? "" });
       setEditingProfile(false);
     } catch (e) {
       console.error("프로필 저장 실패:", e);

@@ -24,6 +24,7 @@ type Profile = {
   username: string;
   displayName: string;
   bio: string;
+  photoURL?: string;
 };
 
 export default function UserPage({
@@ -114,10 +115,18 @@ export default function UserPage({
       <main className="w-full max-w-[480px] mx-auto flex flex-col gap-8">
         {/* 프로필 헤더 */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center">
-            <span className="text-3xl text-white font-bold">
-              {profile.displayName.slice(0, 1).toUpperCase()}
-            </span>
+          <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center overflow-hidden">
+            {profile.photoURL ? (
+              <img
+                src={profile.photoURL}
+                alt={profile.displayName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-3xl text-white font-bold">
+                {profile.displayName.slice(0, 1).toUpperCase()}
+              </span>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-bold text-black">{profile.displayName}</h1>
